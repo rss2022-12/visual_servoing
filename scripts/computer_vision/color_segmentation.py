@@ -56,6 +56,7 @@ def plot_color_scatter_HSV(img):
     norm = colors.Normalize(vmin=-1.,vmax=1.)
     norm.autoscale(pixel_colors)
     pixel_colors = norm(pixel_colors).tolist()
+    plt.hsv()
     axis.scatter(h.flatten(), s.flatten(), v.flatten(), facecolors=pixel_colors, marker=".")
     axis.set_xlabel("Hue")
     axis.set_ylabel("Saturation")
@@ -77,8 +78,41 @@ def show_range(img):
     plt.show()
 
         
+def contouring(img):
+     
+    light_orange = (1, 180, 190)
+    dark_orange = (23, 255, 255)
+    src=cv2.imread(img)
+    img = cv2.cvtColor(src, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(img, light_orange, dark_orange)
+    result = cv2.bitwise_and(img, img, mask=mask)
+    RGBimg=cv2.cvtColor(result, cv2.COLOR_HSV2RGB)
+    gray = cv2.cvtColor(RGBimg, cv2.COLOR_RGB2GRAY)
+    #cv2.imshow("image", gray)
+       
+    ret, threshold = cv2.threshold(gray,40, 255, 0)
+    #cv2.imshow("thresh", threshold)
+   
+    kernel = np.ones((5,5),np.uint8)
+    dilate = cv2.dilate(gray,kernel,iterations = 2)
+    contours, hierarchy =  cv2.findContours(dilate,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    cv2.drawContours(img, contours, -1, (0, 0, 255), 3)
+    
+    c = max(contours, key = cv2.contourArea)
+    x,y,w,h = cv2.boundingRect(c)
+    # cv2.imshow("contour", img)
+    #x,y,w,h = cv2.boundingRect(contours[6])
+    print([x,y,w,h])   
+    cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),3)
+    cv2.imshow("bounding",img)
+    
+    
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    
 
-def cd_color_segmentation(img, template):
+
+def cd_color_segmentation(img,template):
     """
     Implement the cone detection using color segmentation algorithm
     Input:
@@ -89,15 +123,38 @@ def cd_color_segmentation(img, template):
                             (x1, y1) is the top left of the bbox and (x2, y2) is the bottom right of the bbox
     """
     ########## YOUR CODE STARTS HERE ##########
-
-    bounding_box = ((0, 0), (0, 0))
+      
+     
+    light_orange = (1, 180, 190)
+    dark_orange = (23, 255, 255)
+    #src=cv2.imread(img)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(img, light_orange, dark_orange)
+    result = cv2.bitwise_and(img, img, mask=mask)
+    RGBimg=cv2.cvtColor(result, cv2.COLOR_HSV2RGB)
+    gray = cv2.cvtColor(RGBimg, cv2.COLOR_RGB2GRAY)
+    #cv2.imshow("image", gray)
+       
+    ret, threshold = cv2.threshold(gray,40, 255, 0)
+    #cv2.imshow("thresh", threshold)
+   
+    kernel = np.ones((5,5),np.uint8)
+    dilate = cv2.dilate(gray,kernel,iterations = 2)
+    contours, hierarchy =  cv2.findContours(dilate,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)[-2:]
+    cv2.drawContours(img, contours, -1, (0, 0, 255), 3)
+    
+    c = max(contours, key = cv2.contourArea)
+    x,y,w,h = cv2.boundingRect(c)
+    print([x,y,w,h])
+    bounding_box = ((x, y), (x+w, y+h))
 
     ########### YOUR CODE ENDS HERE ###########
 
     # Return bounding box
     return bounding_box
 
-
-image_print("./test_images_cone/test2.jpg")
-# plot_color_scatter_HSV("./test_images_cone/test4.jpg")
-show_range("./test_images_cone/test2.jpg")
+# image_print("./test_images_cone/test9.jpg")
+# plot_color_scatter_HSV("./test_images_cone/test6.jpg")
+# show_range("./test_images_cone/test2.jpg")
+contouring("./test_images_cone/test6.jpg")
+# print(cd_color_segmentation("./test_images_cone/test6.jpg"))
