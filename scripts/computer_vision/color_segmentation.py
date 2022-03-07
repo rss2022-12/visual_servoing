@@ -6,6 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from matplotlib import colors
 
+
 #################### X-Y CONVENTIONS #########################
 # 0,0  X  > > > > >
 #
@@ -56,7 +57,7 @@ def plot_color_scatter_HSV(img):
     norm = colors.Normalize(vmin=-1.,vmax=1.)
     norm.autoscale(pixel_colors)
     pixel_colors = norm(pixel_colors).tolist()
-    plt.hsv()
+    pixel_colors=colors.hsv_to_rgb(pixel_colors)
     axis.scatter(h.flatten(), s.flatten(), v.flatten(), facecolors=pixel_colors, marker=".")
     axis.set_xlabel("Hue")
     axis.set_ylabel("Saturation")
@@ -154,7 +155,7 @@ def cd_color_segmentation(img,template):
     return bounding_box
 
 # image_print("./test_images_cone/test9.jpg")
-# plot_color_scatter_HSV("./test_images_cone/test6.jpg")
+# plot_color_scatter_HSV("./test_images_cone/test4.jpg")
 # show_range("./test_images_cone/test2.jpg")
-contouring("./test_images_cone/test6.jpg")
+# contouring("./test_images_cone/test1.jpg")
 # print(cd_color_segmentation("./test_images_cone/test6.jpg"))
