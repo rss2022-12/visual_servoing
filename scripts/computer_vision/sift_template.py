@@ -55,6 +55,10 @@ def cd_sift_ransac(img, template):
 		if m.distance < 0.75*n.distance:
 			good.append(m)
 
+	# Show matches
+	good_matched_img = cv2.drawMatches(template, kp1, img, kp2, good)
+	# image_print(good_matched_img)
+
 	# If enough good matches, find bounding box
 	if len(good) > MIN_MATCH:
 		src_pts = np.float32([ kp1[m.queryIdx].pt for m in good ]).reshape(-1,1,2)
@@ -68,16 +72,31 @@ def cd_sift_ransac(img, template):
 		pts = np.float32([ [0,0],[0,h-1],[w-1,h-1],[w-1,0] ]).reshape(-1,1,2)
 
 		########## YOUR CODE STARTS HERE ##########
-
+		#Helpful refs: https://towardsdatascience.com/sift-scale-invariant-feature-transform-c7233dc60f37
+		#https://www.youtube.com/watch?v=4AvTMVD9ig0
+		#https://www.thepythoncode.com/article/sift-feature-extraction-using-opencv-in-python#:~:text=SIFT%20stands%20for%20Scale%20Invariant,scale%20and%20other%20image%20transformations.
 		x_min = y_min = x_max = y_max = 0
-
+		# dst = cv2.perspectiveTransform(pts, M)
+		# img = cv2.polylines(img, [np.int32(dst)], True, 255, 3, cv2.LINE_AA)
+		# dst_xy = dst.reshape(-1, 2)
+		# xymin = np.amin(dst_xy, 0)
+		# xymax = np.amax(dst_xy, 0)
+		# print(dst)
+		# print(dst_xy)
+		# print(xymin)
+		# ret = (tuple(xymin), tuple(xymax))
+		# cv2.rectangle(img, ret[0], ret[1], (0, 255, 0), 2)
+		# print(ret)
+		# image_print(img)
 		########### YOUR CODE ENDS HERE ###########
 
 		# Return bounding box
+		print("BOUNDS")
 		return ((x_min, y_min), (x_max, y_max))
+		# return ret
 	else:
 
-		print "[SIFT] not enough matches; matches: ", len(good)
+		print("[SIFT] not enough matches; matches: ", len(good))
 
 		# Return bounding box of area 0 if no match found
 		return ((0,0), (0,0))
@@ -101,7 +120,11 @@ def cd_template_matching(img, template):
 	(img_height, img_width) = img_canny.shape[:2]
 
 	# Keep track of best-fit match
-	best_match = None
+	# best_match = None
+	# Keep track of best-fit match
+	best_match = 0
+	bounding_box = None
+	print("---")
 
 	# Loop over different scales of image
 	for scale in np.linspace(1.5, .5, 50):
@@ -118,7 +141,13 @@ def cd_template_matching(img, template):
 
 		# Remember to resize the bounding box using the highest scoring scale
 		# x1,y1 pixel will be accurate, but x2,y2 needs to be correctly scaled
-		bounding_box = ((0,0),(0,0))
+		# bounding_box = ((0,0),(0,0))
+		# res = cv2.matchTemplate(img_canny, resized_template, cv2.TM_CCOEFF_NORMED)
+		# minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(res, None)
+		# if maxVal > best_match:
+		# 	bounding_box = (maxLoc, (maxLoc[0] + w, maxLoc[1] + h))
+		# 	best_match = maxVal
 		########### YOUR CODE ENDS HERE ###########
-
+	img = cv2.rectangle(img, bounding_box[0], bounding_box[1], (255, 0, 0), 5)
+	image_print(img)
 	return bounding_box

@@ -90,14 +90,14 @@ def contouring(img):
     result = cv2.bitwise_and(img, img, mask=mask)
     RGBimg=cv2.cvtColor(result, cv2.COLOR_HSV2RGB)
     gray = cv2.cvtColor(RGBimg, cv2.COLOR_RGB2GRAY)
-    #cv2.imshow("image", gray)
+    # cv2.imshow("image", gray)
        
     ret, threshold = cv2.threshold(gray,40, 255, 0)
     #cv2.imshow("thresh", threshold)
    
     kernel = np.ones((5,5),np.uint8)
     dilate = cv2.dilate(gray,kernel,iterations = 2)
-    contours, hierarchy =  cv2.findContours(dilate,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy =  cv2.findContours(dilate,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)[-2:] #https://stackoverflow.com/questions/25504964/opencv-python-valueerror-too-many-values-to-unpack
     cv2.drawContours(img, contours, -1, (0, 0, 255), 3)
     
     c = max(contours, key = cv2.contourArea)
