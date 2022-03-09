@@ -1,10 +1,18 @@
+#!/usr/bin/env python
 import cv2
+from cv_bridge import CvBridge, CvBridgeError
 import numpy as np
 import pdb
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from matplotlib import colors
+
+import rospy
+from rospy.numpy_msg import numpy_msg
+from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import Image
+from visual_servoing.msg import ConeLocationPixel
 
 
 #################### X-Y CONVENTIONS #########################
@@ -18,6 +26,7 @@ from matplotlib import colors
 #  v
 #  v
 ###############################################################
+
 
 
 def image_print(img):
@@ -81,23 +90,22 @@ def show_range(img):
         
 def contouring(img):
      
-    light_orange = (0, 200, 190)
-    dark_orange = (15, 255, 255)
+    light_orange = (1, 180, 190)
+    dark_orange = (23, 255, 255)
     src=cv2.imread(img)
     img = cv2.cvtColor(src, cv2.COLOR_BGR2HSV)
-    print(type(img))
     mask = cv2.inRange(img, light_orange, dark_orange)
     result = cv2.bitwise_and(img, img, mask=mask)
     RGBimg=cv2.cvtColor(result, cv2.COLOR_HSV2RGB)
     gray = cv2.cvtColor(RGBimg, cv2.COLOR_RGB2GRAY)
-    # cv2.imshow("image", gray)
+    #cv2.imshow("image", gray)
        
     ret, threshold = cv2.threshold(gray,40, 255, 0)
     #cv2.imshow("thresh", threshold)
    
     kernel = np.ones((5,5),np.uint8)
     dilate = cv2.dilate(gray,kernel,iterations = 2)
-    contours, hierarchy =  cv2.findContours(dilate,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)[-2:] #https://stackoverflow.com/questions/25504964/opencv-python-valueerror-too-many-values-to-unpack
+    contours, hierarchy =  cv2.findContours(dilate,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     cv2.drawContours(img, contours, -1, (0, 0, 255), 3)
     
     c = max(contours, key = cv2.contourArea)
@@ -114,7 +122,7 @@ def contouring(img):
     
 
 
-def cd_color_segmentation(img,template):
+def cd_color_segmentation_callback(img):
     """
     Implement the cone detection using color segmentation algorithm
     Input:
@@ -125,13 +133,14 @@ def cd_color_segmentation(img,template):
                             (x1, y1) is the top left of the bbox and (x2, y2) is the bottom right of the bbox
     """
     ########## YOUR CODE STARTS HERE ##########
-      
-     
-    light_orange = (0, 200, 200)
+    bridge=CvBridge()  
+    img=bridge.imgmsg_to_cv2(img,"bgr8")
+    light_orange = (0, 200, 140)
     dark_orange = (15, 255, 255)
     #src=cv2.imread(img)
+    
+    
     img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    # print(y)
     mask = cv2.inRange(img, light_orange, dark_orange)
     result = cv2.bitwise_and(img, img, mask=mask)
     RGBimg=cv2.cvtColor(result, cv2.COLOR_HSV2RGB)
@@ -148,16 +157,31 @@ def cd_color_segmentation(img,template):
     
     c = max(contours, key = cv2.contourArea)
     x,y,w,h = cv2.boundingRect(c)
-    # print([x,y,w,h])
-    bounding_box = ((x, y), (x+w, y+h))
 
+    # bounding_box = ((x, y), (x+w, y+h))
+    pixel_location=ConeLocationPixel()
+    pixel_location.u=x+w/2.0
+    pixel_location.v=y+h
+    pub=rospy.Publisher(rospy.get_param("visual_servoing/pixel_topic", "/relative_cone_px"),ConeLocationPixel, queue_size=1)
+
+    pub.publish(pixel_location)
     ########### YOUR CODE ENDS HERE ###########
-
+    
     # Return bounding box
-    return bounding_box
 
 # image_print("./test_images_cone/test9.jpg")
-# plot_color_scatter_HSV("./test_images_robotcone/rust_line_1.png")
-# show_range("./test_images_robotcone/line_image_1.png")
-contouring("./test_images_robotcone/rust_line_1.png")
+# plot_color_scatter_HSV("./test_images_cone/test4.jpg")
+# show_range("./test_images_cone/test2.jpg")
+# contouring("./test_images_cone/test1.jpg")
 # print(cd_color_segmentation("./test_images_cone/test6.jpg"))
+def listener():
+        
+    rospy.init_node("cone_detector",anonymous=True)
+    rospy.Subscriber(rospy.get_param("visual_servoing/image_topic","/zed/zed_node/rgb/image_rect_color"),Image, cd_color_segmentation_callback)
+    rospy.spin()
+
+ 
+if __name__ == '__main__':
+    listener()
+    
+
