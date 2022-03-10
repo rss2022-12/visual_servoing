@@ -16,15 +16,20 @@ class ParkingController():
         rospy.Subscriber("/relative_cone", ConeLocation,
             self.relative_cone_callback)
 
-        DRIVE_TOPIC = rospy.get_param("~drive_topic") # set in launch file; different for simulator vs racecar
+        DRIVE_TOPIC = rospy.get_param("visual_servoing/drive_topic","/vesc/ackermann_cmd_mux/input/navigation") # set in launch file; different for simulator vs racecar
         self.drive_pub = rospy.Publisher(DRIVE_TOPIC,
             AckermannDriveStamped, queue_size=10)
         self.error_pub = rospy.Publisher("/parking_error",
             ParkingError, queue_size=10)
+	self.DESIRED_SPEED = 0.98
 
-        self.parking_distance = .75 # meters; try playing with this number!
-        self.relative_x = 0
+	self.parking_distance = 0.0 # meters; try playing with this number!
+        # self.parking_distance = 0.0
+	self.relative_x = 0
         self.relative_y = 0
+
+        # My additions
+        self.close_to_cone = False
 
     def relative_cone_callback(self, msg):
         self.relative_x = msg.x_pos
@@ -35,6 +40,33 @@ class ParkingController():
 
         # YOUR CODE HERE
         # Use relative position and your control law to set drive_cmd
+
+        K_p_steer = 1.0
+
+        absolute_distance = np.sqrt(self.relative_x**2.0 + self.relative_y**2.0)
+        print("Distance:", absolute_distance)
+
+        # Set drive speed based on distance
+        if absolute_distance - self.parking_distance > 0.1:
+            drive_cmd.drive.speed = self.DESIRED_SPEED
+        elif (absolute_distance - self.parking_distance < -0.1):
+            drive_cmd.drive.speed = -self.DESIRED_SPEED
+        else:
+            self.close_to_cone = True
+
+        # Override speed if steering correction is necessary
+        if abs(self.relative_y) > 0.3 and self.close_to_cone:
+            drive_cmd.drive.speed = -self.DESIRED_SPEED
+            print("Making angle correction")
+        else:
+            self.close_to_cone = False
+
+        # Set steering angle based on relative cone position
+        if drive_cmd.drive.speed < 0:
+            steer_error = -self.relative_y
+        else:
+            steer_error = self.relative_y
+        drive_cmd.drive.steering_angle = K_p_steer*steer_error
 
         #################################
 
@@ -52,6 +84,10 @@ class ParkingController():
 
         # YOUR CODE HERE
         # Populate error_msg with relative_x, relative_y, sqrt(x^2+y^2)
+
+        error_msg.x_error = self.relative_x
+        error_msg.y_error = self.relative_y
+        error_msg.distance_error = np.sqrt(self.relative_x**2.0 + self.relative_y**2.0)
 
         #################################
         
